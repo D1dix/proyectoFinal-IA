@@ -1,0 +1,126 @@
+{
+  "name": "Asistente Tickets - Agente con memoria (Fase 1)",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "g1111111-1111-1111-1111-111111111111",
+      "name": "Chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [-360, 300]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Eres un asistente para resolver tickets de soporte de datos, con memoria de la conversacion.\n\nFLUJO QUE DEBES SEGUIR:\n1. Cuando el usuario te pase un ticket, usa la herramienta 'buscar_tickets' para ver si hay casos parecidos en la base.\n2. Si encuentras una solucion clara, PROPONLA al usuario (citando el ticket de origen) y PREGUNTALE si es correcta. NO guardes todavia.\n3. Si NO encuentras nada relevante, dilo claramente: explica lo que sepas o lo que intentarias, y PIDE al usuario que te indique la solucion correcta.\n4. Cuando el usuario CONFIRME que la solucion es correcta, o cuando el usuario te PASE el la solucion/documento, usa la herramienta 'guardar_solucion' enviando:\n   - titulo: un nombre corto para el documento (ej: 'Resolucion ticket 364094 - acceso Power BI')\n   - contenido: el documento de resolucion completo y bien estructurado (solicitud, diagnostico, actuacion, clasificacion, resolucion final).\n5. NUNCA uses guardar_solucion sin una confirmacion explicita del usuario.\n\nResponde siempre en espanol, claro y conciso."
+        }
+      },
+      "id": "g2222222-2222-2222-2222-222222222222",
+      "name": "Agente",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [-80, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "id": "g3333333-3333-3333-3333-333333333333",
+      "name": "Modelo OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [-260, 520]
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 12
+      },
+      "id": "g4444444-4444-4444-4444-444444444444",
+      "name": "Memoria",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [-100, 520]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "buscar_tickets",
+        "toolDescription": "Busca en la base de tickets de soporte de datos casos resueltos parecidos al problema descrito.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "tickets-soporte",
+          "mode": "list",
+          "cachedResultName": "tickets-soporte"
+        },
+        "topK": 4,
+        "options": {}
+      },
+      "id": "g5555555-5555-5555-5555-555555555555",
+      "name": "Pinecone (Buscar)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [60, 520]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "g6666666-6666-6666-6666-666666666666",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [60, 720]
+    },
+    {
+      "parameters": {
+        "name": "guardar_solucion",
+        "description": "Guarda la solucion CONFIRMADA de un ticket como documento en Drive. Usar SOLO cuando el usuario haya confirmado la solucion o te la haya dado el. Enviar 'titulo' y 'contenido'.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PEGA_AQUI_EL_ID_DEL_SUBWORKFLOW",
+          "mode": "id"
+        },
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": {
+          "schemaType": "manual",
+          "fields": [
+            { "name": "titulo", "type": "string", "description": "Nombre corto para el documento" },
+            { "name": "contenido", "type": "string", "description": "Documento de resolucion completo" }
+          ]
+        }
+      },
+      "id": "g7777777-7777-7777-7777-777777777777",
+      "name": "guardar_solucion",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.3,
+      "position": [240, 520]
+    }
+  ],
+  "connections": {
+    "Chat": {
+      "main": [[{ "node": "Agente", "type": "main", "index": 0 }]]
+    },
+    "Modelo OpenAI": {
+      "ai_languageModel": [[{ "node": "Agente", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Memoria": {
+      "ai_memory": [[{ "node": "Agente", "type": "ai_memory", "index": 0 }]]
+    },
+    "Pinecone (Buscar)": {
+      "ai_tool": [[{ "node": "Agente", "type": "ai_tool", "index": 0 }]]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [[{ "node": "Pinecone (Buscar)", "type": "ai_embedding", "index": 0 }]]
+    },
+    "guardar_solucion": {
+      "ai_tool": [[{ "node": "Agente", "type": "ai_tool", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}

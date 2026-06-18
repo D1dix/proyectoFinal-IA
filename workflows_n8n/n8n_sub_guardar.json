@@ -1,0 +1,62 @@
+{
+  "name": "SUB - Guardar resolucion en Drive",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "f1111111-1111-1111-1111-111111111111",
+      "name": "Recibe del agente",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-200, 300]
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "contenido",
+        "options": {
+          "fileName": "resolucion.txt"
+        }
+      },
+      "id": "f2222222-2222-2222-2222-222222222222",
+      "name": "Texto a fichero",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [40, 300]
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.titulo || ('Resolucion_' + $now.format('yyyyLLdd_HHmmss')) }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "PEGA_AQUI_EL_ID_DE_LA_CARPETA",
+          "mode": "id"
+        },
+        "options": {
+          "convertToGoogleDocument": true
+        }
+      },
+      "id": "f3333333-3333-3333-3333-333333333333",
+      "name": "Guardar en Drive (Doc)",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [280, 300]
+    }
+  ],
+  "connections": {
+    "Recibe del agente": {
+      "main": [[{ "node": "Texto a fichero", "type": "main", "index": 0 }]]
+    },
+    "Texto a fichero": {
+      "main": [[{ "node": "Guardar en Drive (Doc)", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}

@@ -1,0 +1,152 @@
+{
+  "name": "Ingesta Tickets v2 - docx directo a Pinecone",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1111111-1111-1111-1111-111111111111",
+      "name": "Iniciar manualmente",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-260, 300]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "PEGA_AQUI_EL_ID_DE_LA_CARPETA",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "id": "a2222222-2222-2222-2222-222222222222",
+      "name": "Listar ficheros de Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-40, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-docx",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": ".docx",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a3333333-3333-3333-3333-333333333333",
+      "name": "Solo los .docx",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "a4444444-4444-4444-4444-444444444444",
+      "name": "Descargar fichero",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "tickets-soporte",
+          "mode": "list",
+          "cachedResultName": "tickets-soporte"
+        },
+        "options": {}
+      },
+      "id": "a5555555-5555-5555-5555-555555555555",
+      "name": "Pinecone (Insertar)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "a6666666-6666-6666-6666-666666666666",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [560, 520]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "id": "a7777777-7777-7777-7777-777777777777",
+      "name": "Cargador de documentos",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [760, 520]
+    },
+    {
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "id": "a8888888-8888-8888-8888-888888888888",
+      "name": "Trocear texto",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [940, 700]
+    }
+  ],
+  "connections": {
+    "Iniciar manualmente": {
+      "main": [[{ "node": "Listar ficheros de Drive", "type": "main", "index": 0 }]]
+    },
+    "Listar ficheros de Drive": {
+      "main": [[{ "node": "Solo los .docx", "type": "main", "index": 0 }]]
+    },
+    "Solo los .docx": {
+      "main": [[{ "node": "Descargar fichero", "type": "main", "index": 0 }]]
+    },
+    "Descargar fichero": {
+      "main": [[{ "node": "Pinecone (Insertar)", "type": "main", "index": 0 }]]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [[{ "node": "Pinecone (Insertar)", "type": "ai_embedding", "index": 0 }]]
+    },
+    "Cargador de documentos": {
+      "ai_document": [[{ "node": "Pinecone (Insertar)", "type": "ai_document", "index": 0 }]]
+    },
+    "Trocear texto": {
+      "ai_textSplitter": [[{ "node": "Cargador de documentos", "type": "ai_textSplitter", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}
